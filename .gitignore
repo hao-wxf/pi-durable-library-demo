@@ -1,0 +1,6 @@
+node_modules/
+.library-web/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.DS_Store

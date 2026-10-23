@@ -1,0 +1,1283 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:," />
+<title>图书管理工作台</title>
+<style>
+  :root {
+    --bg: #f4f5f2;
+    --surface: #ffffff;
+    --surface-2: #fafaf7;
+    --line: #e7e8e2;
+    --line-strong: #d9dbd2;
+    --ink: #1a1b18;
+    --ink-2: #5f6259;
+    --ink-3: #8d9187;
+    --ok: #2d7a4f;
+    --ok-soft: #e8f4ec;
+    --warn: #a35f00;
+    --warn-soft: #fdf1de;
+    --danger: #b93a28;
+    --danger-soft: #fbe9e6;
+    --accent: #1a1b18;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(26, 27, 24, .04), 0 10px 30px rgba(26, 27, 24, .05);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .app { min-height: 100vh; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 26px 28px 48px; }
+
+  /* ── Header ───────────────────────────────────────────────────────────── */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: #151613; color: #f4f5f2;
+    font-weight: 700; font-size: 18px; letter-spacing: -.5px;
+  }
+  .title h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -.3px; }
+  .title p { margin: 2px 0 0; color: var(--ink-3); font-size: 12.5px; }
+  .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 11px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line);
+    font-size: 12px; color: var(--ink-2); white-space: nowrap;
+  }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+  .pill.off i { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+  .pill.busy i { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); animation: pulse 1.2s ease-in-out infinite; }
+  .pill .pid { color: var(--ink-3); font-size: 11px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+  .top-actions .btn { height: 32px; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .chip-model {
+    padding: 6px 11px; border-radius: 999px; border: 1px dashed var(--line-strong);
+    color: var(--ink-2); font-size: 12px; background: transparent; white-space: nowrap;
+  }
+  .btn {
+    border: 1px solid var(--line-strong); background: var(--surface);
+    padding: 7px 12px; border-radius: 10px; font-size: 12.5px;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background .15s, border-color .15s, opacity .15s;
+  }
+  .btn:hover:not(:disabled) { background: var(--surface-2); border-color: #c8cabf; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover:not(:disabled) { background: #33352f; }
+  .btn.sm { padding: 4px 9px; font-size: 12px; border-radius: 8px; }
+
+  /* ── Cards ────────────────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 16px 18px 12px;
+  }
+  .card-head h2 { margin: 0; font-size: 14px; font-weight: 620; letter-spacing: -.1px; }
+  .card-head .sub { color: var(--ink-3); font-size: 12px; }
+  .count-chip {
+    font-size: 11.5px; color: var(--ink-2); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px;
+  }
+
+  /* ── AI assistant ─────────────────────────────────────────────────────── */
+  .ai-card {
+    padding: 0; display: flex; flex-direction: column;
+    height: min(74vh, 700px); min-height: 540px; overflow: hidden;
+  }
+  .ai-head {
+    display: flex; align-items: center; gap: 10px; flex: none;
+    padding: 14px 16px 12px; border-bottom: 1px solid var(--line);
+  }
+  .ai-head .spark {
+    width: 34px; height: 34px; border-radius: 10px; flex: none;
+    display: grid; place-items: center;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+  }
+  .ai-head .spark svg { width: 18px; height: 18px; }
+  .ai-title { min-width: 0; }
+  .ai-title h2 { margin: 0; font-size: 14.5px; font-weight: 650; letter-spacing: -.2px; }
+  .ai-title p { margin: 1px 0 0; color: var(--ink-3); font-size: 11.5px; }
+  .ai-head .chip-model {
+    margin-left: auto; padding: 3px 9px; font-size: 11px;
+    max-width: 46%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chat-log {
+    flex: 1; min-height: 0; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 16px 14px;
+  }
+  .msg { display: flex; }
+  .msg.user { justify-content: flex-end; }
+  .msg-body {
+    max-width: 86%; padding: 9px 13px; border-radius: 14px;
+    font-size: 13.5px; line-height: 1.62;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .msg.assistant .msg-body {
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-top-left-radius: 5px;
+  }
+  .msg.user .msg-body {
+    background: var(--accent); color: #fff; border-top-right-radius: 5px;
+  }
+  .chat-tools { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 2px; }
+  .tool-chip {
+    font-size: 11.5px; color: var(--ink-2); background: #fff;
+    border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .tool-chip i { width: 5px; height: 5px; border-radius: 50%; background: var(--warn); }
+  .tool-chip.done i { background: var(--ok); }
+  .tool-chip.failed i { background: var(--danger); }
+  .typing { display: inline-flex; align-items: center; gap: 4px; }
+  .typing i {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3);
+    animation: typing 1.2s ease-in-out infinite;
+  }
+  .typing i:nth-child(2) { animation-delay: .15s; }
+  .typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes typing { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+  .ai-compose { flex: none; border-top: 1px solid var(--line); padding: 10px 14px 13px; }
+  .composer {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--line-strong); background: var(--surface);
+    border-radius: 13px; padding: 6px 6px 6px 14px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .composer:focus-within { border-color: #b9bcae; box-shadow: 0 0 0 4px rgba(26, 27, 24, .05); }
+  .composer svg { width: 17px; height: 17px; color: var(--ink-3); flex: none; }
+  .composer input {
+    flex: 1; border: 0; outline: 0; background: transparent;
+    padding: 9px 0; font-size: 14px; min-width: 0;
+  }
+  .composer input::placeholder { color: #a3a79d; }
+  .composer .btn { flex: none; }
+  .suggestions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+  .suggestions button {
+    border: 1px solid var(--line); background: var(--surface-2);
+    border-radius: 999px; padding: 5px 11px; font-size: 12px; color: var(--ink-2);
+    transition: background .15s, border-color .15s;
+  }
+  .suggestions button:hover:not(:disabled) { background: #f1f2ed; border-color: var(--line-strong); }
+  .suggestions button:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ── Stats ────────────────────────────────────────────────────────────── */
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat { padding: 15px 16px 13px; }
+  .stat .label { color: var(--ink-3); font-size: 12px; }
+  .stat .value { font-size: 27px; font-weight: 640; letter-spacing: -.8px; margin-top: 2px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .stat .note { color: var(--ink-3); font-size: 11.5px; margin-top: 3px; }
+  .stat.warn .value { color: var(--warn); }
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 432px); gap: 16px; align-items: start; }
+  .main-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .side { display: flex; flex-direction: column; gap: 16px; }
+  @media (max-width: 1120px) {
+    .grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* ── Tables ───────────────────────────────────────────────────────────── */
+  .table-wrap { padding: 0 6px 8px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 11.5px; font-weight: 550; color: var(--ink-3);
+    padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0f1ec; font-size: 13px; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: #fbfbf8; }
+  .book-cell { display: flex; align-items: center; gap: 10px; min-width: 200px; }
+  .cover {
+    width: 30px; height: 40px; border-radius: 5px; flex: none;
+    display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+  }
+  .book-title { font-weight: 550; letter-spacing: -.1px; }
+  .book-author { color: var(--ink-3); font-size: 11.5px; margin-top: 1px; }
+  .stock { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .stock b { color: var(--ink); font-weight: 600; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px; border-radius: 999px; font-size: 11.5px;
+    background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .badge.ok { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+  .badge.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+  .badge.off { color: var(--ink-3); }
+  .badge.live { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+  .empty { padding: 26px 18px; color: var(--ink-3); font-size: 12.5px; text-align: center; }
+
+  /* ── Side cards ───────────────────────────────────────────────────────── */
+  .task-empty { padding: 4px 18px 16px; color: var(--ink-3); font-size: 12.5px; }
+  .task { margin: 0 12px 12px; border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; background: var(--surface-2); }
+  .task:first-of-type { margin-top: 2px; }
+  .task-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .task-name { font-size: 12.5px; font-weight: 600; }
+  .task-meta { color: var(--ink-3); font-size: 11.5px; margin-top: 2px; }
+  .bar { height: 5px; border-radius: 99px; background: #e9eae4; overflow: hidden; margin-top: 9px; }
+  .bar > i { display: block; height: 100%; background: var(--ink); border-radius: 99px; transition: width .3s ease; }
+
+  .btn.danger { color: var(--danger); border-color: #eccbc5; background: #fffaf9; }
+  .btn.danger:hover:not(:disabled) { background: var(--danger-soft); }
+
+  .event-list { padding: 0 18px 14px; display: flex; flex-direction: column; gap: 9px; max-height: 260px; overflow: auto; }
+  .event { display: flex; gap: 9px; font-size: 12.5px; color: var(--ink-2); }
+  .event time { color: var(--ink-3); font-size: 11px; flex: none; font-variant-numeric: tabular-nums; padding-top: 1px; }
+  .event i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); flex: none; margin-top: 6px; }
+  .event i.loan { background: #6b8afd; }
+  .event i.return { background: var(--ok); }
+  .event i.import { background: var(--warn); }
+  .event i.catalog { background: #8a6bd1; }
+  .event i.reserve { background: #2f8fa3; }
+  .event i.purchase { background: #b07a1e; }
+  .event i.batch { background: #7a5aa8; }
+  .event i.seed { background: var(--ink-3); }
+  .event-list:empty::after { content: "暂无动态"; color: var(--ink-3); font-size: 12.5px; }
+
+  /* ── Import card ──────────────────────────────────────────────────────── */
+  .import-body { padding: 0 18px 16px; display: flex; align-items: center; gap: 18px; }
+  .import-copy { flex: 1; min-width: 0; }
+  .import-count { display: flex; align-items: baseline; gap: 6px; }
+  .import-count b { font-size: 26px; font-weight: 650; letter-spacing: -1px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .import-count span { color: var(--ink-3); font-size: 12.5px; }
+  .import-current { color: var(--ink-3); font-size: 12px; margin: 4px 0 0; }
+  .import-current.idle { margin: 0; }
+  .import-body .bar { flex: 1; min-width: 120px; margin-top: 0; }
+  .import-btn { flex: none; width: 150px; justify-content: center; height: 38px; border-radius: 10px; font-size: 13px; }
+
+  .catalog-scroll { max-height: 520px; overflow-y: auto; }
+  .catalog-scroll thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  th.check, td.check { width: 34px; padding-right: 0; }
+  td.check input { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+
+  .batch-bar {
+    display: none; align-items: center; gap: 10px;
+    padding: 10px 18px 14px; border-top: 1px solid var(--line);
+  }
+  .batch-bar.open { display: flex; }
+  .batch-bar .count { color: var(--ink-2); font-size: 12.5px; white-space: nowrap; }
+  .batch-bar input {
+    width: 120px; border: 1px solid var(--line-strong); border-radius: 9px;
+    padding: 6px 9px; font-size: 12.5px; outline: 0; background: #fff;
+  }
+  .batch-bar input:focus { border-color: #b9bcae; box-shadow: 0 0 0 3px rgba(26, 27, 24, .05); }
+  .batch-bar .spacer { flex: 1; }
+
+  /* ── Reservation and purchase queues ──────────────────────────────────── */
+  .queue-list {
+    padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px;
+    max-height: 300px; overflow-y: auto;
+  }
+  .queue-row {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 12px; background: var(--surface-2);
+  }
+  .queue-main { flex: 1; min-width: 0; }
+  .queue-title {
+    font-size: 13px; font-weight: 550; letter-spacing: -.1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .queue-meta { color: var(--ink-3); font-size: 11.5px; margin-top: 2px; }
+  .queue-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+  .queue-empty { padding: 2px 18px 16px; color: var(--ink-3); font-size: 12.5px; }
+
+  /* ── Modal and toasts ─────────────────────────────────────────────────── */
+  .modal-back { position: fixed; inset: 0; background: rgba(20, 21, 18, .38); display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .modal-back.open { display: flex; }
+  .modal { width: 380px; max-width: 100%; background: var(--surface); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.25); padding: 20px; }
+  .modal h3 { margin: 0 0 4px; font-size: 15px; }
+  .modal p { margin: 0 0 14px; color: var(--ink-3); font-size: 12.5px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 5px; }
+  .field input {
+    width: 100%; border: 1px solid var(--line-strong); border-radius: 9px;
+    padding: 8px 10px; outline: 0; background: #fff;
+  }
+  .field input:focus { border-color: #b9bcae; box-shadow: 0 0 0 3px rgba(26,27,24,.05); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+  .toasts { position: fixed; left: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 60; max-width: 380px; }
+  .toast {
+    background: #1e1f1b; color: #f2f3ee; border-radius: 10px; padding: 10px 13px;
+    font-size: 12.5px; box-shadow: 0 10px 30px rgba(0,0,0,.22);
+    animation: toast-in .18s ease-out;
+  }
+  .toast.warn { background: #4a3512; }
+  .toast.error { background: #4b211b; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 18px 16px 36px; }
+    .topbar { align-items: flex-start; flex-direction: column; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .ai-card { height: min(80vh, 640px); min-height: 480px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">书</div>
+        <div class="title">
+          <h1>图书管理工作台</h1>
+          <p>馆藏、借阅、预约与采购</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="pill" id="status-pill"><i></i><span id="status-text">连接中</span><span class="pid" id="service-pid"></span></span>
+        <button class="btn danger" id="btn-crash" disabled>模拟崩溃</button>
+        <button class="btn primary" id="btn-restart" disabled>重新启动</button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="card stat">
+        <div class="label">馆藏种类</div>
+        <div class="value" id="stat-titles">—</div>
+        <div class="note" id="stat-titles-note">—</div>
+      </div>
+      <div class="card stat">
+        <div class="label">可借副本</div>
+        <div class="value" id="stat-available">—</div>
+        <div class="note" id="stat-available-note">—</div>
+      </div>
+      <div class="card stat">
+        <div class="label">在借</div>
+        <div class="value" id="stat-active">—</div>
+        <div class="note">未归还借阅</div>
+      </div>
+      <div class="card stat warn">
+        <div class="label">逾期</div>
+        <div class="value" id="stat-overdue">—</div>
+        <div class="note">已过应还日期</div>
+      </div>
+      <div class="card stat">
+        <div class="label">预约等待</div>
+        <div class="value" id="stat-reserved">—</div>
+        <div class="note">有副本时自动转借</div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <div class="main-col">
+        <section class="card">
+          <div class="card-head">
+            <h2>图书目录</h2>
+            <div class="composer" style="padding: 2px 4px 2px 10px; gap: 6px; width: 220px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+              <input id="search" placeholder="搜索书名或作者" style="padding: 5px 0; font-size: 12.5px;" />
+            </div>
+            <span class="count-chip" id="catalog-count">0 种</span>
+          </div>
+          <div class="table-wrap catalog-scroll">
+            <table>
+              <thead><tr><th class="check"></th><th>图书</th><th>分类</th><th>库存</th><th>状态</th><th></th></tr></thead>
+              <tbody id="catalog-body"></tbody>
+            </table>
+            <div class="empty" id="catalog-empty" style="display:none">没有匹配的图书</div>
+          </div>
+          <div class="batch-bar" id="batch-bar">
+            <span class="count" id="batch-count">已选 0 本</span>
+            <input id="batch-borrower" value="王五" placeholder="读者姓名" autocomplete="off" />
+            <button class="btn primary sm" id="btn-batch">批量借出</button>
+            <span class="spacer"></span>
+            <button class="btn sm" id="btn-batch-clear">清空</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>借阅记录</h2>
+            <span class="count-chip" id="loans-count">0 条</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>读者</th><th>图书</th><th>借出</th><th>应还</th><th>状态</th><th></th></tr></thead>
+              <tbody id="loans-body"></tbody>
+            </table>
+            <div class="empty" id="loans-empty" style="display:none">还没有借阅记录</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>预约队列</h2>
+            <span class="count-chip" id="reservations-count">0 人等待</span>
+          </div>
+          <div class="queue-list" id="reservations-list"></div>
+          <div class="queue-empty" id="reservations-empty">没有预约排队</div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>采购审批</h2>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="count-chip" id="purchases-count">0 项待批</span>
+              <button class="btn sm" id="btn-purchase">新申请</button>
+            </div>
+          </div>
+          <div class="queue-list" id="purchases-list"></div>
+          <div class="queue-empty" id="purchases-empty">没有采购申请</div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>批量入库</h2>
+            <span class="sub" id="import-sub">待入库</span>
+          </div>
+          <div class="import-body" id="import-body"></div>
+        </section>
+      </div>
+
+      <aside class="side">
+        <section class="card ai-card">
+          <div class="ai-head">
+            <span class="spark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.9z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>
+            </span>
+            <div class="ai-title">
+              <h2>AI 助手</h2>
+              <p>查馆藏、办借还、预约与采购</p>
+            </div>
+            <span class="chip-model" id="model-chip">模型加载中</span>
+          </div>
+          <div class="chat-log" id="chat-log"></div>
+          <div class="ai-compose">
+            <form class="composer" id="command-form" autocomplete="off">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+              <input id="command-input" placeholder="输入问题,例如:把《重构》借给王五" />
+              <button class="btn primary" type="submit" id="btn-send">发送</button>
+            </form>
+            <div class="suggestions">
+              <button data-quick="stats">馆藏统计</button>
+              <button data-quick="overdue">逾期名单</button>
+              <button data-quick="lend">办理借阅</button>
+              <button data-quick="reserve">预约候补</button>
+              <button data-quick="import">批量入库</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>进行中的任务</h2>
+            <span class="sub" id="live-count">空闲</span>
+          </div>
+          <div id="live-tasks"><div class="task-empty">没有正在执行的任务</div></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>馆务动态</h2>
+            <span class="sub">最近 12 条</span>
+          </div>
+          <div class="event-list" id="events"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="modal-back">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+const DAY = 24 * 60 * 60 * 1000;
+const view = {
+  ready: false,
+  running: false,
+  inspecting: false,
+  recovering: false,
+  starting: false,
+  busy: false,
+  pid: null,
+  config: null,
+  state: null,
+  lastExit: null,
+};
+let query = "";
+let streamText = "";
+let tools = [];
+const selected = new Set();
+const WELCOME = "你好,我是 AI 助手。可以帮你查馆藏、办借还、预约、采购,或者批量入库。";
+let chatMessages = [{ role: "assistant", text: WELCOME }];
+
+const covers = ["#2f5d50", "#3f5c86", "#7a4a3a", "#5b4a7a", "#6b5a2e", "#3a6b6b", "#7a3a52", "#474f5e"];
+
+function el(id) { return document.getElementById(id); }
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function timeOf(at) {
+  return new Date(at).toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit" });
+}
+function dateOf(at) {
+  return new Date(at).toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" });
+}
+
+function toast(text, level = "info") {
+  const node = document.createElement("div");
+  node.className = "toast " + level;
+  node.textContent = text;
+  const list = el("toasts");
+  list.appendChild(node);
+  while (list.children.length > 3) list.firstElementChild.remove();
+  setTimeout(() => node.remove(), 3200);
+}
+
+async function send(command) {
+  if (!view.running) {
+    toast("服务暂时不可用", "warn");
+    return false;
+  }
+  try {
+    const response = await fetch("/api/command", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(command),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      toast(body.error || "操作没有送达", "warn");
+      return false;
+    }
+    return true;
+  } catch {
+    toast("无法连接服务", "error");
+    return false;
+  }
+}
+
+async function post(path) {
+  try {
+    const response = await fetch(path, { method: "POST" });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      toast(body.error || "操作失败", "warn");
+      return false;
+    }
+    return true;
+  } catch {
+    toast("无法连接服务", "error");
+    return false;
+  }
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────
+
+function render() {
+  renderStatus();
+  renderStats();
+  renderImport();
+  renderCatalog();
+  renderReservations();
+  renderPurchases();
+  renderBatchBar();
+  renderLiveTasks();
+  renderEvents();
+  renderLoans();
+  renderChat();
+}
+
+function renderStatus() {
+  let stateText = "连接中";
+  let stateKind = "";
+  if (view.ready) {
+    if (view.inspecting || view.recovering) {
+      stateText = "恢复中";
+      stateKind = "busy";
+    } else if (view.starting) {
+      stateText = "启动中";
+      stateKind = "busy";
+    } else if (!view.running) {
+      stateText = "服务离线";
+      stateKind = "off";
+    } else if (view.busy) {
+      stateText = "AI 处理中";
+      stateKind = "busy";
+    } else {
+      stateText = "运行中";
+    }
+  }
+
+  el("status-pill").className = "pill" + (stateKind ? " " + stateKind : "");
+  el("status-text").textContent = stateText;
+  el("service-pid").textContent = view.pid ? "pid " + view.pid : "";
+  el("model-chip").textContent = view.config ? view.config.provider + "/" + view.config.modelId : "模型未连接";
+  el("model-chip").title = view.config ? view.config.provider + "/" + view.config.modelId : "";
+
+  const canSend = view.running && !view.inspecting && !view.starting && !view.busy;
+  el("btn-send").disabled = !canSend;
+  el("command-input").disabled = !canSend;
+  for (const button of document.querySelectorAll(".suggestions button")) button.disabled = !canSend;
+  el("btn-crash").disabled = !(view.ready && view.running && !view.inspecting && !view.starting);
+  el("btn-restart").disabled = !(view.ready && !view.running && !view.inspecting && !view.starting);
+  el("btn-purchase").disabled = !view.running;
+  renderBatchBar();
+}
+
+function renderStats() {
+  const stats = view.state?.stats;
+  if (stats === undefined) return;
+  el("stat-titles").textContent = String(stats.titles);
+  el("stat-titles-note").textContent = "共 " + stats.copies + " 本";
+  el("stat-available").textContent = String(stats.available);
+  el("stat-available-note").textContent = "总副本 " + stats.copies;
+  el("stat-active").textContent = String(stats.active);
+  el("stat-overdue").textContent = String(stats.overdue);
+  el("stat-reserved").textContent = String(stats.reserved ?? 0);
+}
+
+function renderImport() {
+  const progress = view.state?.import;
+  const host = el("import-body");
+  const running = progress?.running === true;
+  const done = progress?.done ?? 0;
+  const total = progress?.total ?? 0;
+
+  if (running) {
+    const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+    el("import-sub").textContent = "进行中";
+    host.innerHTML =
+      '<div class="import-copy">' +
+      '<div class="import-count"><b>' + done + "</b><span>/ " + total + " 本</span></div>" +
+      '<div class="import-current">' +
+      (progress.current ? "正在入库《" + esc(progress.current) + "》" : "正在写入") +
+      "</div></div>" +
+      '<div class="bar"><i style="width:' + percent + '%"></i></div>';
+    return;
+  }
+
+  const last = total > 0 ? "上次入库 " + done + " / " + total + " 本" : "24 本书,逐本写入馆藏";
+  el("import-sub").textContent = total > 0 && done >= total ? "已完成" : "待入库";
+  host.innerHTML =
+    '<div class="import-copy"><div class="import-current' + (total > 0 ? "" : " idle") + '">' + last + "</div></div>" +
+    '<button class="btn primary import-btn" id="btn-import"' + (view.running ? "" : " disabled") + ">入库 24 本</button>";
+  el("btn-import").addEventListener("click", startImport);
+}
+
+async function startImport() {
+  if (view.state?.import?.running === true) return;
+  if (await send({ type: "import", count: 24 })) toast("已开始批量入库");
+}
+
+function renderCatalog() {
+  const books = view.state?.books ?? [];
+  const needle = query.trim().toLowerCase();
+  const shown = books.filter(
+    (book) =>
+      needle.length === 0 ||
+      book.title.toLowerCase().includes(needle) ||
+      book.author.toLowerCase().includes(needle),
+  );
+  el("catalog-count").textContent = books.length + " 种";
+  const body = el("catalog-body");
+  body.innerHTML = "";
+  for (const book of shown) {
+    const tr = document.createElement("tr");
+    const ratio = book.total === 0 ? 0 : book.available / book.total;
+    const badge = book.available === 0 ? "off" : ratio <= 0.34 ? "warn" : "ok";
+    const badgeText = book.available === 0 ? "借完" : ratio <= 0.34 ? "紧张" : "可借";
+    const coverColor = covers[Math.abs(hash(book.title)) % covers.length];
+    const action = book.available > 0 ? "借出" : "预约";
+    tr.innerHTML =
+      '<td class="check"><input type="checkbox" ' + (selected.has(book.isbn) ? "checked " : "") + 'aria-label="选择《' + esc(book.title) + '》" /></td>' +
+      '<td><div class="book-cell"><div class="cover" style="background:' + coverColor + '">' + esc(book.title.slice(0, 1)) + "</div>" +
+      '<div><div class="book-title">' + esc(book.title) + '</div><div class="book-author">' + esc(book.author) + "</div></div></div></td>" +
+      '<td><span class="badge">' + esc(book.category) + "</span></td>" +
+      '<td class="stock"><b>' + book.available + "</b> / " + book.total + "</td>" +
+      '<td><span class="badge ' + badge + '">' + badgeText + "</span></td>" +
+      '<td style="text-align:right"><button class="btn sm" ' + (view.running ? "" : "disabled") + ">" + action + "</button></td>";
+    tr.querySelector('input[type="checkbox"]').addEventListener("change", (event) => {
+      if (event.target.checked) selected.add(book.isbn);
+      else selected.delete(book.isbn);
+      renderBatchBar();
+    });
+    tr.querySelector("button").addEventListener("click", () => {
+      if (book.available > 0) openLoan(book);
+      else openReserve(book);
+    });
+    body.appendChild(tr);
+  }
+  el("catalog-empty").style.display = shown.length === 0 ? "block" : "none";
+}
+
+function hash(text) {
+  let value = 0;
+  for (let i = 0; i < text.length; i += 1) value = (value * 31 + text.charCodeAt(i)) | 0;
+  return value;
+}
+
+function renderBatchBar() {
+  const size = selected.size;
+  el("batch-bar").classList.toggle("open", size > 0);
+  el("batch-count").textContent = "已选 " + size + " 本";
+  el("btn-batch").disabled = !view.running || size === 0;
+}
+
+function renderReservations() {
+  const items = view.state?.reservations ?? [];
+  const waiting = items.filter((item) => item.status === "waiting");
+  el("reservations-count").textContent = waiting.length + " 人等待";
+  const host = el("reservations-list");
+  host.innerHTML = "";
+  for (const item of items) {
+    const status =
+      item.status === "waiting"
+        ? (item.position ? "等待中 · 第 " + item.position + " 位" : "等待中")
+        : item.status === "fulfilled"
+          ? "已转借阅"
+          : "已取消";
+    const style = item.status === "waiting" ? "warn" : item.status === "fulfilled" ? "ok" : "off";
+    const row = document.createElement("div");
+    row.className = "queue-row";
+    row.innerHTML =
+      '<div class="queue-main"><div class="queue-title">' + esc(item.title) + "</div>" +
+      '<div class="queue-meta">' + esc(item.reader) + " · " + dateOf(item.createdAt) + ' <span class="badge ' + style + '">' + status + "</span></div></div>" +
+      '<div class="queue-actions">' +
+      (item.status === "waiting"
+        ? '<button class="btn sm" ' + (view.running ? "" : "disabled") + ">取消</button>"
+        : "") +
+      "</div>";
+    const button = row.querySelector("button");
+    if (button) button.addEventListener("click", () => send({ type: "cancel-reservation", taskId: item.taskId }));
+    host.appendChild(row);
+  }
+  el("reservations-empty").style.display = items.length === 0 ? "block" : "none";
+}
+
+const PURCHASE_STATUS = {
+  pending: { text: "待审批", style: "warn" },
+  approved: { text: "已批准", style: "live" },
+  rejected: { text: "已驳回", style: "off" },
+  cancelled: { text: "已取消", style: "off" },
+};
+
+function renderPurchases() {
+  const items = view.state?.purchases ?? [];
+  const pending = items.filter((item) => item.status === "pending").length;
+  el("purchases-count").textContent = pending + " 项待批";
+  const host = el("purchases-list");
+  host.innerHTML = "";
+  for (const item of items) {
+    const state = PURCHASE_STATUS[item.status] ?? PURCHASE_STATUS.pending;
+    const text = item.status === "approved" ? (item.bookIsbn ? "已入库" : "入库中") : state.text;
+    const style = item.status === "approved" && item.bookIsbn ? "ok" : state.style;
+    const row = document.createElement("div");
+    row.className = "queue-row";
+    row.innerHTML =
+      '<div class="queue-main"><div class="queue-title">' + esc(item.title) + "</div>" +
+      '<div class="queue-meta">' + item.copies + " 本 · " + esc(item.requester) + " · " + dateOf(item.createdAt) +
+      ' <span class="badge ' + style + '">' + text + "</span></div></div>" +
+      '<div class="queue-actions">' +
+      (item.status === "pending"
+        ? '<button class="btn sm" data-act="reject" ' + (view.running ? "" : "disabled") + ">驳回</button>" +
+          '<button class="btn sm primary" data-act="approve" ' + (view.running ? "" : "disabled") + ">批准</button>"
+        : "") +
+      "</div>";
+    for (const button of row.querySelectorAll("button")) {
+      button.addEventListener("click", () =>
+        send({ type: "decide-purchase", taskId: item.taskId, approve: button.dataset.act === "approve" }),
+      );
+    }
+    host.appendChild(row);
+  }
+  el("purchases-empty").style.display = items.length === 0 ? "block" : "none";
+}
+
+const PHASES = {
+  check: "校验库存",
+  reserve: "登记借阅",
+  deliver: "确认借阅",
+  finish: "确认借阅",
+  work: "逐本入库",
+  watch: "等待可借",
+  review: "等待审批",
+  apply: "采购入库",
+  prepare: "准备借阅",
+  decide: "汇总结果",
+};
+
+const TASK_NAMES = {
+  "library.loan": "借阅任务",
+  "library.reservation": "预约任务",
+  "library.purchase": "采购任务",
+  "library.batch-loan": "批量借阅",
+  "library.batch-loan-item": "借阅子任务",
+  "library.import": "批量入库",
+};
+
+function renderLiveTasks() {
+  const live = view.state?.live ?? [];
+  const progress = view.state?.import;
+  const host = el("live-tasks");
+  host.innerHTML = "";
+  el("live-count").textContent = live.length === 0 ? "空闲" : live.length + " 个任务";
+
+  const shown = live.slice(0, 8);
+  for (const task of shown) {
+    const node = document.createElement("div");
+    node.className = "task";
+    const name = TASK_NAMES[task.kind] || task.kind;
+    const phase = PHASES[task.phase] || task.phase;
+    if (task.kind === "library.import" && progress && progress.total > 0) {
+      const percent = Math.round((progress.done / progress.total) * 100);
+      node.innerHTML =
+        '<div class="task-top"><span class="task-name">批量入库 #' + task.id + '</span><span class="badge live">' + phase + "</span></div>" +
+        '<div class="task-meta">' + progress.done + " / " + progress.total + " 本" + (progress.current ? " · 《" + esc(progress.current) + "》" : "") + "</div>" +
+        '<div class="bar"><i style="width:' + percent + '%"></i></div>';
+    } else {
+      const meta =
+        task.kind === "library.reservation"
+          ? "等待有副本归还"
+          : task.kind === "library.purchase"
+            ? "等待审批决定"
+            : task.kind === "library.batch-loan"
+              ? "等待每本书的结果"
+              : task.kind === "library.batch-loan-item"
+                ? "批量借阅子任务"
+                : "正在处理";
+      node.innerHTML =
+        '<div class="task-top"><span class="task-name">' + esc(name) + " #" + task.id + '</span><span class="badge live">' + esc(phase) + "</span></div>" +
+        '<div class="task-meta">' + meta + "</div>";
+    }
+    host.appendChild(node);
+  }
+
+  if (live.length > shown.length) {
+    const node = document.createElement("div");
+    node.className = "task-meta";
+    node.style.padding = "0 18px 12px";
+    node.textContent = "另有 " + (live.length - shown.length) + " 个任务";
+    host.appendChild(node);
+  }
+
+  if (live.length === 0) host.innerHTML = '<div class="task-empty">没有正在执行的任务</div>';
+}
+
+function renderEvents() {
+  const events = view.state?.events ?? [];
+  const host = el("events");
+  host.innerHTML = "";
+  for (const event of events.slice(0, 12)) {
+    const node = document.createElement("div");
+    node.className = "event";
+    node.innerHTML =
+      "<time>" + timeOf(event.at) + '</time><i class="' + esc(event.kind) + '"></i><span>' + esc(event.text) + "</span>";
+    host.appendChild(node);
+  }
+}
+
+function renderLoans() {
+  const loans = view.state?.loans ?? [];
+  const now = Date.now();
+  el("loans-count").textContent = loans.length + " 条";
+  const body = el("loans-body");
+  body.innerHTML = "";
+  for (const loan of loans) {
+    const closed = loan.status === "returned" || loan.status === "cancelled";
+    const overdue = !closed && loan.dueAt < now;
+    const status =
+      loan.status === "returned"
+        ? "已归还"
+        : loan.status === "cancelled"
+          ? "已取消"
+          : overdue
+            ? "逾期"
+            : loan.status === "borrowing"
+              ? "处理中"
+              : "在借";
+    const style = closed ? "off" : overdue ? "warn" : loan.status === "borrowing" ? "live" : "ok";
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      "<td>" + esc(loan.borrower) + "</td>" +
+      '<td><div class="book-title">' + esc(loan.title) + "</div></td>" +
+      '<td class="stock">' + dateOf(loan.borrowedAt) + "</td>" +
+      '<td class="stock">' + dateOf(loan.dueAt) + (overdue ? ' <span class="badge warn">逾期</span>' : "") + "</td>" +
+      '<td><span class="badge ' + style + '">' + status + "</span></td>" +
+      '<td style="text-align:right">' + (closed ? "" : '<button class="btn sm"' + (view.running ? "" : " disabled") + ">归还</button>") + "</td>";
+    const button = tr.querySelector("button");
+    if (button) button.addEventListener("click", () => send({ type: "return", isbn: loan.isbn, borrower: loan.borrower }));
+    body.appendChild(tr);
+  }
+  el("loans-empty").style.display = loans.length === 0 ? "block" : "none";
+}
+
+function chatBubble(role, text) {
+  const row = document.createElement("div");
+  row.className = "msg " + role;
+  const body = document.createElement("div");
+  body.className = "msg-body";
+  body.textContent = text;
+  row.appendChild(body);
+  return row;
+}
+
+function typingBubble() {
+  const row = document.createElement("div");
+  row.className = "msg assistant";
+  const body = document.createElement("div");
+  body.className = "msg-body typing";
+  for (let index = 0; index < 3; index += 1) body.appendChild(document.createElement("i"));
+  row.appendChild(body);
+  return row;
+}
+
+function renderChat(forceScroll = false) {
+  const host = el("chat-log");
+  const previousTop = host.scrollTop;
+  const atBottom = host.scrollHeight - host.scrollTop - host.clientHeight < 60;
+  host.innerHTML = "";
+  for (const message of chatMessages) host.appendChild(chatBubble(message.role, message.text));
+  if (tools.length > 0) {
+    const row = document.createElement("div");
+    row.className = "msg assistant";
+    const chips = document.createElement("div");
+    chips.className = "chat-tools";
+    for (const tool of tools) {
+      const chip = document.createElement("span");
+      chip.className = "tool-chip " + (tool.phase === "end" ? (tool.isError ? "failed" : "done") : "");
+      chip.innerHTML = "<i></i>" + esc(tool.label);
+      chips.appendChild(chip);
+    }
+    row.appendChild(chips);
+    host.appendChild(row);
+  }
+  if (streamText.length > 0) host.appendChild(chatBubble("assistant", streamText));
+  else if (view.busy) host.appendChild(typingBubble());
+  if (forceScroll || atBottom) host.scrollTop = host.scrollHeight;
+  else host.scrollTop = previousTop;
+}
+
+function commitAnswer() {
+  if (streamText.trim().length === 0) return;
+  chatMessages.push({ role: "assistant", text: streamText });
+  streamText = "";
+  tools = [];
+}
+
+async function ask(text) {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return false;
+  chatMessages.push({ role: "user", text: trimmed });
+  streamText = "";
+  tools = [];
+  renderChat(true);
+  if (!(await send({ type: "ask", text: trimmed }))) {
+    chatMessages.pop();
+    renderChat(true);
+    return false;
+  }
+  return true;
+}
+
+// ── Loan modal ────────────────────────────────────────────────────────────
+
+function openModal(html) {
+  el("modal").innerHTML = html;
+  el("modal-back").classList.add("open");
+}
+function closeModal() {
+  el("modal-back").classList.remove("open");
+}
+el("modal-back").addEventListener("click", (event) => {
+  if (event.target === el("modal-back")) closeModal();
+});
+
+function openLoan(book) {
+  openModal(
+    "<h3>借出《" + esc(book.title) + "》</h3><p>库存 " + book.available + " 本,借期 14 天</p>" +
+    '<form id="loan-form"><div class="field"><label>读者姓名</label><input id="loan-borrower" value="王五" autocomplete="off" /></div>' +
+    '<div class="modal-actions"><button type="button" class="btn" id="loan-cancel">取消</button><button class="btn primary" type="submit">确认借出</button></div></form>',
+  );
+  const input = el("loan-borrower");
+  input.focus();
+  input.select();
+  el("loan-cancel").addEventListener("click", closeModal);
+  el("loan-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const borrower = input.value.trim() || "读者";
+    closeModal();
+    if (await send({ type: "loan", isbn: book.isbn, borrower })) {
+      toast("借阅已受理:" + borrower + " 借《" + book.title + "》");
+    }
+  });
+}
+
+function openReserve(book) {
+  openModal(
+    "<h3>预约《" + esc(book.title) + "》</h3><p>这本书已借完,有副本归还时会自动转为借阅</p>" +
+    '<form id="reserve-form"><div class="field"><label>读者姓名</label><input id="reserve-reader" value="王五" autocomplete="off" /></div>' +
+    '<div class="modal-actions"><button type="button" class="btn" id="reserve-cancel">取消</button><button class="btn primary" type="submit">加入预约</button></div></form>',
+  );
+  const input = el("reserve-reader");
+  input.focus();
+  input.select();
+  el("reserve-cancel").addEventListener("click", closeModal);
+  el("reserve-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const reader = input.value.trim() || "读者";
+    closeModal();
+    if (await send({ type: "reserve", isbn: book.isbn, reader })) {
+      toast("预约已受理:" + reader + " 预约《" + book.title + "》");
+    }
+  });
+}
+
+function openPurchase() {
+  openModal(
+    "<h3>采购申请</h3><p>提交后进入待审批状态,批准后才会入库</p>" +
+    '<form id="purchase-form">' +
+    '<div class="field"><label>书名</label><input id="purchase-title" autocomplete="off" /></div>' +
+    '<div class="field"><label>作者</label><input id="purchase-author" autocomplete="off" /></div>' +
+    '<div class="field"><label>分类</label><input id="purchase-category" value="其他" autocomplete="off" /></div>' +
+    '<div class="field"><label>册数</label><input id="purchase-copies" type="number" min="1" value="2" /></div>' +
+    '<div class="field"><label>申请人</label><input id="purchase-requester" value="馆员" autocomplete="off" /></div>' +
+    '<div class="modal-actions"><button type="button" class="btn" id="purchase-cancel">取消</button><button class="btn primary" type="submit">提交申请</button></div></form>',
+  );
+  const title = el("purchase-title");
+  title.focus();
+  el("purchase-cancel").addEventListener("click", closeModal);
+  el("purchase-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const value = title.value.trim();
+    const author = el("purchase-author").value.trim();
+    if (value.length === 0 || author.length === 0) {
+      title.focus();
+      return;
+    }
+    const copies = Math.max(1, Math.round(Number(el("purchase-copies").value) || 1));
+    const requester = el("purchase-requester").value.trim() || "馆员";
+    const category = el("purchase-category").value.trim() || "其他";
+    closeModal();
+    if (await send({ type: "purchase", title: value, author, category, copies, requester })) {
+      toast("采购申请已提交:" + value + " " + copies + " 本");
+    }
+  });
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+
+el("btn-batch").addEventListener("click", async () => {
+  const isbns = Array.from(selected);
+  if (isbns.length === 0) return;
+  const borrower = el("batch-borrower").value.trim() || "读者";
+  if (await send({ type: "batch-loan", borrower, isbns })) {
+    selected.clear();
+    toast("批量借阅已提交:" + isbns.length + " 本");
+    renderCatalog();
+    renderBatchBar();
+  }
+});
+
+el("btn-batch-clear").addEventListener("click", () => {
+  selected.clear();
+  renderCatalog();
+  renderBatchBar();
+});
+
+el("btn-purchase").addEventListener("click", openPurchase);
+
+el("command-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const input = el("command-input");
+  const text = input.value.trim();
+  if (text.length === 0) return;
+  input.value = "";
+  if (!(await ask(text))) input.value = text;
+});
+
+el("search").addEventListener("input", (event) => {
+  query = event.target.value;
+  renderCatalog();
+});
+
+el("btn-crash").addEventListener("click", async () => {
+  if (await post("/api/kill")) toast("服务已停止", "warn");
+});
+
+el("btn-restart").addEventListener("click", async () => {
+  view.starting = true;
+  renderStatus();
+  if (await post("/api/start")) {
+    toast("正在启动服务");
+  } else {
+    view.starting = false;
+    renderStatus();
+  }
+});
+
+for (const button of document.querySelectorAll("[data-quick]")) {
+  button.addEventListener("click", async () => {
+    const kind = button.dataset.quick;
+    if (kind === "stats") {
+      await ask("用一句话总结馆藏、在借和逾期情况,再列出逾期明细。");
+    } else if (kind === "overdue") {
+      await ask("列出所有逾期借阅,说明逾期天数并给出处理建议。");
+    } else if (kind === "lend") {
+      await ask("请把《重构:改善既有代码的设计》借给王五,调用 lend_book 创建借阅任务,然后一句话确认。");
+    } else if (kind === "reserve") {
+      await ask("《人月神话》已经借完了,帮赵六预约一本,并告诉我排在第几位。");
+    } else if (kind === "import") {
+      await startImport();
+    }
+  });
+}
+
+// ── SSE ───────────────────────────────────────────────────────────────────
+
+const source = new EventSource("/api/events");
+
+function applySnapshot(snapshot) {
+  view.ready = true;
+  view.running = snapshot.running;
+  view.inspecting = snapshot.inspecting;
+  view.pid = snapshot.pid;
+  view.config = snapshot.config;
+  view.state = snapshot.state;
+  view.busy = snapshot.busy;
+  view.lastExit = snapshot.lastExit;
+  // Without a turn in progress the text is the last finished answer, which
+  // arrived without the question that produced it.
+  if (snapshot.busy && snapshot.agentText) streamText = snapshot.agentText;
+  render();
+}
+
+source.onmessage = (event) => {
+  let message;
+  try {
+    message = JSON.parse(event.data);
+  } catch {
+    return;
+  }
+  switch (message.type) {
+    case "snapshot":
+      applySnapshot(message);
+      return;
+    case "hello":
+      view.ready = true;
+      view.running = true;
+      view.starting = false;
+      view.config = message.config;
+      view.pid = message.config.pid;
+      render();
+      return;
+    case "state":
+      view.ready = true;
+      view.state = message.value;
+      render();
+      return;
+    case "agent":
+      streamText = message.text;
+      renderChat();
+      return;
+    case "agent-tool":
+      tools.push({
+        label: message.name + (message.phase === "end" ? (message.isError ? " · 失败" : " · 完成") : " · 运行中"),
+        phase: message.phase,
+        isError: message.isError === true,
+      });
+      renderChat();
+      return;
+    case "busy":
+      view.busy = message.value === true;
+      if (view.busy) {
+        streamText = "";
+        tools = [];
+      }
+      renderStatus();
+      renderChat();
+      return;
+    case "turn":
+      view.busy = false;
+      if (message.status !== "done") toast("这一轮没有答复:" + (message.reason || "未知原因"), "warn");
+      commitAnswer();
+      renderStatus();
+      renderChat();
+      return;
+    case "recovering":
+      view.recovering = message.value === true;
+      renderStatus();
+      return;
+    case "recovered":
+      view.recovering = false;
+      // A generation interrupted by the crash finishes during resume; its
+      // committed text arrives as a stream, but no turn event follows.
+      commitAnswer();
+      renderStatus();
+      renderChat();
+      return;
+    case "inspect":
+      view.state = message.state;
+      view.inspecting = false;
+      render();
+      return;
+    case "exit":
+      view.running = false;
+      view.starting = false;
+      view.pid = null;
+      view.busy = false;
+      view.recovering = false;
+      view.lastExit = message;
+      // The supervisor reads the storage with a short-lived worker before it
+      // can start a new one, so restart stays disabled until that finishes.
+      view.inspecting = true;
+      streamText = "";
+      tools = [];
+      toast("服务连接中断,当前显示最近一次提交的数据", "warn");
+      render();
+      return;
+    case "notice":
+      toast(message.text, message.level === "warn" ? "warn" : message.level === "error" ? "error" : "info");
+      return;
+    case "error":
+      toast("服务报告:" + message.text, "error");
+      return;
+    case "cleared":
+      view.state = null;
+      view.busy = false;
+      streamText = "";
+      tools = [];
+      selected.clear();
+      chatMessages = [{ role: "assistant", text: WELCOME }];
+      render();
+      return;
+    default:
+      return;
+  }
+};
+
+source.onerror = () => {
+  el("status-text").textContent = "连接中断";
+};
+
+render();
+</script>
+</body>
+</html>
